@@ -14,7 +14,7 @@ With @juliosueiras and TheRadziu - @AluProductions
   3. Make sure that reF00D is installed AFTER NoNpDRM in this config.
   4. Put keys.bin into ur0:/tai/keys.bin (you must restart after changing the keys.bin)
   
-  NOTE: rePatch module loading will take priority over reF00D.
+  NOTE: rePatch module loading will take priority over reF00D. If a module  is in the rePatch folder, it will be loaded first and reF00D will not attempt to decrypt it.
   
 ## Special thanks:
 Team Molecule for feeding the p00r.

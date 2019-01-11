@@ -155,9 +155,9 @@ typedef struct {
 	uint64_t size;
 	uint32_t sig_type;
 	uint32_t section_num;
-    uint32_t seg_keys_area_size; // ex: 0x1E
-    uint32_t metadata_infos_area_size; // ex: 0x170
-    char padding[8];
+	uint32_t seg_keys_area_size; // ex: 0x1E
+	uint32_t metadata_infos_area_size; // ex: 0x170
+	char padding[8];
 }  __attribute__((packed)) ModuleMetadataHeader_t;
 
 typedef struct {
@@ -209,24 +209,21 @@ typedef struct SceSblSmCommContext130 // size is 0x130 as its name indicates.
 } SceSblSmCommContext130;
 
 typedef struct {
-  uint32_t type; // 1=caps, 2=unk100, 3=attrs
-  uint32_t size;
-  uint64_t next; // 1 if another MetaData Info structure follows else 0
-  
-  union {
-    // type 1
-    struct { // 0x20 bytes of data
-      uint8_t capability[0x20];
-    } PSVITA_caps_info;
-    
-    // type 2
-    struct { // 0x100 bytes of data
-      uint8_t unk100[0x100];
-    } PSVITA_unk100_info;
-    
-    // type 3
-    struct { // 0x20 bytes of data
-      uint8_t attribute[0x20];
-    } PSVITA_attrs_info;
-  };
+	uint32_t type; // 1=caps, 2=unk100, 3=attrs
+	uint32_t size;
+	uint64_t next; // 1 if another MetaData Info structure follows else 0
+	union {
+		// type 1
+		struct { // 0x20 bytes of data
+			uint8_t capability[0x20];
+		} PSVITA_caps_info;
+		// type 2
+		struct { // 0x100 bytes of data
+			uint8_t unk100[0x100];
+		} PSVITA_unk100_info;
+		// type 3
+		struct { // 0x20 bytes of data
+			uint8_t attribute[0x20];
+		} PSVITA_attrs_info;
+	};
 } __attribute__((packed)) PSVITA_METADATA_INFO;

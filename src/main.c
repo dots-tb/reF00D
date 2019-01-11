@@ -7,6 +7,7 @@
 
 // Special thanks:
 // to Team Molecule for feeding the p00r. 
+// To motoharu, aerosoul, TheFloW, xerpi, St4rk, Mathieulh, zecoxao for having reversed a part of the PSVita and made useful tools.
 // to Silica for his mental illness (actually caring about PSM) which made us realize the headers weren't always in order. 
 // To sys for being sys
 

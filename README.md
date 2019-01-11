@@ -7,7 +7,8 @@ the American - @dots_tb
 the 【Ｐｒｉｎｃｅｓｓ　ｏｆ　Ｓｌｅｅｐｉｎｇ】 - @PoSsvkey
 
 With @juliosueiras and TheRadziu - @AluProductions
-
+## What it does:
+  It allows you to run modules such as games or system apps that require a FW different from your own. This includes thing such as 3.69 games or 3.51 apps.
 ## How to use:
   1. Add ref00d.skprx path to your taihen config.txt or use Autoplugin to install it.
   Note for devs: The release version does not work with plugin loader and must be used in taihen config.txt

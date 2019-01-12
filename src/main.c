@@ -31,35 +31,6 @@
 #include "self.h"
 #include "elf.h"
 
-typedef struct {
-  uint16_t version;                 // 0x00
-  uint16_t version_flag;            // 0x02
-  uint16_t type;                    // 0x04
-  uint16_t flags;                   // 0x06
-  uint64_t aid;                     // 0x08
-  char content_id[0x30];            // 0x10
-  uint8_t key_table[0x10];          // 0x40
-  uint8_t key[0x10];                // 0x50
-  uint64_t start_time;              // 0x60
-  uint64_t expiration_time;         // 0x68
-  uint8_t ecdsa_signature[0x28];    // 0x70
-
-  uint64_t flags2;                  // 0x98
-  uint8_t key2[0x10];               // 0xA0
-  uint8_t unk_B0[0x10];             // 0xB0
-  uint8_t openpsid[0x10];           // 0xC0
-  uint8_t unk_D0[0x10];             // 0xD0
-  uint8_t cmd56_handshake[0x14];    // 0xE0
-  uint32_t unk_F4;                  // 0xF4
-  uint32_t unk_F8;                  // 0xF8
-  uint32_t sku_flag;                // 0xFC
-  uint8_t rsa_signature[0x100];     // 0x100
-} SceNpDrmLicense;
-
-int ksceNpDrmGetRifName(char *name, int ignored, uint64_t aid);
-int ksceNpDrmGetFixedRifName(char *rif_name, uint32_t flags, uint64_t is_gc);
-int ksceNpDrmGetRifVitaKey(SceNpDrmLicense *license_buf, uint8_t *klicensee, uint32_t *flags, uint32_t *sku_flag, uint64_t *start_time, uint64_t *expiration_time);
-
 #define printf ksceDebugPrintf
 #define HOOKS_NUMBER 5
 
@@ -86,20 +57,6 @@ typedef struct KeyHeader {
 	uint32_t num_of_keys;
 	uint32_t key_size;
 } KeyHeader;
-
-int getlicensee_rif(char *path, char *klicensee) {
-	int res, fd;
-	char *klicensee_buf = NULL, *klicensee_buf_aligned;
-	klicensee_buf = sceSysmemMallocForKernel(0x200 + 63);
-	klicensee_buf_aligned = (char *)(((int)klicensee_buf + 63) & 0xFFFFFFC0);
-	memset(klicensee, 0, 0x10);
-	fd = ksceIoOpen(path, SCE_O_RDONLY, 0);
-	ksceIoRead(fd, klicensee_buf_aligned, 0x200);
-	ksceIoClose(fd);
-	res = ksceNpDrmGetRifVitaKey((SceNpDrmLicense *)klicensee_buf_aligned, (uint8_t *)klicensee, NULL, NULL, NULL, NULL);
-	sceSysmemFreeForKernel(klicensee_buf);
-	return res;
-}
 
 typedef struct SceKey {
 	KeyType key_type;
@@ -140,16 +97,6 @@ int get_key(KeyType key_type,  SceType sce_type, uint64_t sys_ver, int key_rev, 
 	return -1;
 }
 
-
-
-void authid2titleid(uint64_t *authid, char *titleid) { // CelesteBlue 
-	if (((((char*)authid)[2] >> 1) & 0x1E) == 0)
-		snprintf(titleid, 10, "NPXS"); // "NPXS" case
-	 else { 
-		snprintf(titleid, 10, "PCS%c", 0x41 + (((((char*)authid)[2] >> 1) - 1)  & 0x1F)); // "PCS" case
-		snprintf(titleid+4, 10,  "%05d", (int)(((uint32_t*)authid)[0] & 0x1FFFF)); // number
-	}
-}
 
 static ModuleMetadataDecKeyInfo_t MetadataDecKeyInfo;
 static ModuleMetadataHeader_t MetadataHeader;
@@ -196,7 +143,6 @@ static int decrypt_module(char *header, int header_size, SceSblSmCommContext130 
 		sysver = appinfo->version;
 
 	if(appinfo->self_type == APP) {
-		char klicensee[0x10];
 		char klicensee_dec[0x10];
 		int keytype = shdr->sdk_type >= 2 ? 1 : 0;
 		
@@ -204,45 +150,8 @@ static int decrypt_module(char *header, int header_size, SceSblSmCommContext130 
 		if(np_key_index < 0)
 			return np_key_index;	
 		
-		char titleid[32];
-		authid2titleid(&appinfo->authid, titleid);
-		
-		uint64_t aid;
-		
-		ksceRegMgrGetKeyBin("/CONFIG/NP", "account_id", &aid, sizeof(uint64_t));
-		for(int i = 0; i < DEVICES_AMT; i++){
-
-			if(strncmp(DEVICES[i], "gr", 2) == 0 ){
-
-				ksceNpDrmGetFixedRifName(path_buf_aligned + 512, 0, 1LL);
-				snprintf(path_buf_aligned, 512, "%s/license/app/%s/%s", DEVICES[i], titleid, path_buf_aligned + 512);
-				if((ret = getlicensee_rif(path_buf_aligned, klicensee)) >= 0)
-					break;
-
-			} else {
-
-				ksceNpDrmGetRifName(path_buf_aligned + 512, 0, aid);
-				snprintf(path_buf_aligned, 512, "%s/license/app/%s/%s", DEVICES[i], titleid, path_buf_aligned + 512);
-				if((ret = getlicensee_rif(path_buf_aligned, klicensee)) >= 0)
-					break;
-
-				ksceNpDrmGetRifName(path_buf_aligned + 512, 0, 0LL);
-				snprintf(path_buf_aligned, 512, "%s/license/app/%s/%s", DEVICES[i], titleid, path_buf_aligned + 512);
-				if((ret = getlicensee_rif(path_buf_aligned, klicensee)) >= 0)
-					break;
-
-				ksceNpDrmGetFixedRifName(path_buf_aligned + 512, 0, 0LL);
-				snprintf(path_buf_aligned, 512, "%s/license/app/%s/%s", DEVICES[i], titleid, path_buf_aligned + 512);
-				if((ret = getlicensee_rif(path_buf_aligned, klicensee)) >= 0)
-					break;
-			}
-		}
-
-		if(ret < 0)
-			return ret;
-		
 		memset(&iv, 0, sizeof(iv) );
-		ret = sceSblSsMgrAESCBCDecryptForDriver(&klicensee, &klicensee_dec, 0x10, &(KEYS[np_key_index].key), 0x80, &iv, 1);
+		ret = sceSblSsMgrAESCBCDecryptForDriver(&(context_130->self_auth_info.klicensee), &klicensee_dec, 0x10, &(KEYS[np_key_index].key), 0x80, &iv, 1);
 		if(ret < 0)
 			return ret;
 		

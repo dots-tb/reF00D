@@ -18,6 +18,12 @@ With @juliosueiras and TheRadziu - @AluProductions
   
   NOTE: rePatch module loading will take priority over reF00D. If a module is in the rePatch folder, it will be loaded first and reF00D will not attempt to decrypt it.
   
+## Troubleshooting:
+  Q: I've installed this plugin but games still error with **C1-6703-6** code.  
+  A: This error means that vita still couldn't run games/apps. This, in return, means reF00D plugin is not loaded, which might be caused by:
+- Bad TAI configuration, for example typo in reF00D line, putting it into wrong section of tai configuration, or using wrong tai configuration file,
+- Misplaced or missing keys.bin file. It has to be `ur0:tai/keys.bin`.
+  
 ## Special thanks:
 Team Molecule for feeding the p00r.
 

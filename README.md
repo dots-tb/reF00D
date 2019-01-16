@@ -10,7 +10,7 @@ With @juliosueiras and TheRadziu - @AluProductions
 ## What it does:
   It allows you to run modules such as games or system apps that require a FW different from your own. This includes thing such as 3.69 games or 3.51 apps.
 ## How to use:
-  1. Add ref00d.skprx path to your taihen config.txt or use Autoplugin to install it.
+  1. Add reF00D.skprx path to your taihen config.txt or use Autoplugin to install it.
   Note for devs: The release version does not work with plugin loader and must be used in taihen config.txt
   2. Make sure that reF00D is installed AFTER NoNpDRM in this config.txt.
   3. Put keys.bin file into ur0:/tai/keys.bin. (https://www.mediafire.com/download/t5obgaa3naatr9m)

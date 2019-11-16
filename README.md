@@ -7,6 +7,10 @@ the American - @dots_tb
 the 【Ｐｒｉｎｃｅｓｓ　ｏｆ　Ｓｌｅｅｐｉｎｇ】 - @PoSsvkey
 
 With @juliosueiras and TheRadziu - @AluProductions
+
+## Updated keys.bin:
+https://forum.devchroma.nl/index.php/topic,44.0.html
+
 ## What it does:
   It allows you to run modules such as games or system apps that require a FW different from your own. This includes thing such as 3.69 games or 3.51 apps.
 ## How to use:

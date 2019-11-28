@@ -1,4 +1,5 @@
 # reF00D - By FAPS Team
+# Please use: https://github.com/SKGleba/0syscall6/releases
 
 the French - @CelesteBlue123 
 

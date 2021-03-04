@@ -1,8 +1,22 @@
-ref00d:
-  attributes: 0
+reF00D:
+  attributes: 7
   version:
     major: 1
     minor: 1
   main:
     start: module_start
-    stop: module_stop
+  modules:
+    ReAuthMgr:
+      syscall: false
+      functions:
+        - ref00d_auth_open
+        - ref00d_auth_close
+        - ref00d_auth_header
+        - ref00d_load_block
+        - ref00d_setup_segment
+    ReAuthMgrForDebugger:
+      syscall: false
+      functions:
+        - ref00d_get_internal_header
+        - ref00d_segment_num
+        - ref00d_segment_info

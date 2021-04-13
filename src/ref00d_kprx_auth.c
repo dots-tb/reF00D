@@ -134,16 +134,11 @@ int kprxAuthKeysSetup(void){
 
 int kprxAuthCheckSystemFw(void){
 
-	int res;
-	SceKernelFwInfo fw_data;
-	memset(&fw_data, 0, sizeof(fw_data));
-	fw_data.size = sizeof(fw_data);
+	SceKblParam *pKblParam = ksceKernelSysrootGetKblParam();
+	if(pKblParam == NULL)
+		return -1;
 
-	res = ksceKernelGetSystemSwVersion(&fw_data);
-	if(res < 0)
-		return res;
-
-	if(((fw_data.version & ~0xFFF) - 0x3600000) >= 0x140000)
+	if(((pKblParam->current_fw_version & ~0xFFF) - 0x3600000) >= 0x140000)
 		return -1;
 
 	return 0;
@@ -154,24 +149,32 @@ int ref00d_kprx_auth_initialization(void){
 	int res;
 
 	res = kprxAuthCheckSystemFw();
-	if(res < 0)
+	if(res < 0){
+		printf("%s:kprxAuthCheckSystemFw failed 0x%X\n", __FUNCTION__, res);
 		return res;
+	}
 
 	SceUID SceNpDrm_moduleid = ksceKernelSearchModuleByName("SceNpDrm");
-	if(SceNpDrm_moduleid < 0)
+	if(SceNpDrm_moduleid < 0){
+		printf("%s:SceNpDrm not found.\n", __FUNCTION__);
 		return SceNpDrm_moduleid;
+	}
 
 	res = module_get_offset(0x10005, SceNpDrm_moduleid, 0, 0xEDD4 | 1, (uintptr_t *)&sceNpDrmRsaModPower);
 	if(res < 0)
 		return res;
 
 	res = kprxAuthKeysSetup();
-	if(res < 0)
+	if(res < 0){
+		printf("%s:kprxAuthKeysSetup failed 0x%X\n", __FUNCTION__, res);
 		return res;
+	}
 
 	void *memptr = ksceKernelAllocHeapMemory(0x1000B, 0x103F);
-	if(memptr == NULL)
+	if(memptr == NULL){
+		printf("%s:sceKernelAllocHeapMemory failed\n", __FUNCTION__);
 		return -1;
+	}
 
 	ref00d_private_header = (char *)(((uintptr_t)memptr + 0x3F) & ~0x3F);
 

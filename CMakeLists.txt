@@ -21,7 +21,7 @@ add_executable(reF00D
   src/ref00d_utils.c
   src/ref00d_kprx_auth.c
   src/ref00d_kprx_auth_keys_release.c
-  src/ref00d_aes_ecb.S
+  src/ref00d_aes_cbc.S
 )
 
 target_link_libraries(reF00D
@@ -32,6 +32,7 @@ target_link_libraries(reF00D
   SceSblSsMgrForDriver_stub
   SceSysclibForDriver_stub
   SceSysmemForDriver_stub
+  SceSysrootForKernel_stub
   SceKernelUtilsForDriver_stub
   SceThreadmgrForDriver_stub
   SceModulemgrForDriver_stub

@@ -48,6 +48,7 @@ set_target_properties(reF00D
 vita_create_self(reF00D.skprx reF00D
   CONFIG exports.yml
   UNSAFE
+  STRIPPED
 )
 
 vita_create_stubs(stubs reF00D ${CMAKE_SOURCE_DIR}/exports.yml KERNEL)

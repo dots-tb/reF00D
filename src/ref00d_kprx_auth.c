@@ -72,45 +72,35 @@ int ref00dAesCbcDecrypt(const void *src, void *dst, int length, const void *key,
 	return 0;
 }
 
-int kprxAuthDecryptKey(SceKprxAuthKey *entry){
+int kprxAuthDecryptKey(SceKprxAuthKey *entry, const void *key, void *iv){
 
 	int res;
-	unsigned char iv[0x10];
 	SceKprxAuthKey tmp;
-	ScePortabilityData src, dst;
-
 	memcpy(&tmp, entry, sizeof(tmp));
-	memset(&src, 0, sizeof(src));
-	memset(&dst, 0, sizeof(dst));
 
-	src.msg_size = 0x20;
-	dst.msg_size = 0x20;
-
-	memcpy(src.msg, tmp.key, 0x20);
-	memcpy(iv, iv_seed, sizeof(iv));
-
-	res = ksceSblSsDecryptWithPortability(1, iv, &src, &dst);
-	if(res < 0)
+	res = ref00dAesCbcDecrypt(&tmp, &tmp, sizeof(SceKprxAuthKey), key, 128, iv);
+	if(res < 0){
+		printf("%s:ref00dAesCbcDecrypt failed 0x%X\n", __FUNCTION__, res);
 		return res;
+	}
 
-	memcpy(tmp.key, dst.msg, 0x20);
-	memcpy(iv, iv_seed, sizeof(iv));
-
-	res = ref00dAesCbcDecrypt(&tmp, &tmp, sizeof(SceKprxAuthKey), key_seed, 256, iv);
-	if(res < 0)
-		return res;
-
-	if(tmp.magic != 0x0D0F33B9)
+	if(tmp.magic != 0x0D0F33B9){
+		printf("%s:Magic not match. magic:0x%08X\n", __FUNCTION__, tmp.magic);
 		return -1;
+	}
 
 	uint32_t sha256_res[8];
 
 	res = ksceSha256Digest(&tmp, sizeof(SceKprxAuthKey) - sizeof(uint32_t), sha256_res);
-	if(res < 0)
+	if(res < 0){
+		printf("%s:sceSha256Digest failed 0x%X\n", __FUNCTION__, res);
 		return res;
+	}
 
-	if(tmp.hash != (((sha256_res[0] ^ sha256_res[1]) & ~sha256_res[2]) ^ sha256_res[3]))
+	if(tmp.hash != (((sha256_res[0] ^ sha256_res[1]) & ~sha256_res[2]) ^ sha256_res[3])){
+		printf("%s:Hash not match. hash:0x%08X\n", __FUNCTION__, tmp.hash);
 		return -1;
+	}
 
 	tmp.hash = 0;
 
@@ -119,12 +109,46 @@ int kprxAuthDecryptKey(SceKprxAuthKey *entry){
 	return 0;
 }
 
+
+const ScePortabilityData enc_key_blob = {
+	.msg_size = 0x20,
+	.msg = {
+		0x92, 0xd0, 0xc1, 0xe9, 0x40, 0xfd, 0x80, 0x12, 0x4b, 0x1f, 0x52, 0x56, 0x99, 0x22, 0x59, 0x3f,
+		0x19, 0x1e, 0xba, 0x4b, 0x66, 0xd6, 0x53, 0xda, 0x1b, 0x54, 0xe8, 0xbf, 0x06, 0xfc, 0xe6, 0x99
+	}
+};
+
 int kprxAuthKeysSetup(void){
 
 	int res;
+	char iv[0x10];
+	ScePortabilityData dst;
+
+	memset(&dst, 0, sizeof(dst));
+	memset(iv, 0, sizeof(iv));
+
+	dst.msg_size = 0x20;
+
+	res = ksceSblSsDecryptWithPortability(0xC, iv, &enc_key_blob, &dst);
+	if(res < 0){
+		printf("%s:sceSblSsDecryptWithPortability failed 0x%X\n", __FUNCTION__, res);
+		return res;
+	}
+
+	int check_failed = 0;
+
+	for(int i=0;i<0x10;i++){
+		check_failed |= (dst.msg[i] != 0);
+	}
+
+	if(check_failed != 0){
+		printf("%s:kek decryption failed.\n", __FUNCTION__);
+		return res;
+	}
 
 	for(int i=0;i<REF00D_KPRX_AUTH_KEY_NUMBER;i++){
-		res = kprxAuthDecryptKey((SceKprxAuthKey *)&kprx_auth_key_list[i]);
+		memset(iv, 0, sizeof(iv));
+		res = kprxAuthDecryptKey((SceKprxAuthKey *)&kprx_auth_key_list[i], &dst.msg[0x10], iv);
 		if(res < 0)
 			return res;
 	}

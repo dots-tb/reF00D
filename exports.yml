@@ -7,6 +7,7 @@ reF00D:
     start: module_start
   modules:
     ReAuthMgr:
+      version: 1
       syscall: false
       functions:
         - ref00d_auth_open
@@ -15,6 +16,7 @@ reF00D:
         - ref00d_load_block
         - ref00d_setup_segment
     ReAuthMgrForDebugger:
+      version: 1
       syscall: false
       functions:
         - ref00d_get_internal_header

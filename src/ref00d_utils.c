@@ -19,7 +19,7 @@ int __swap_data32(uint32_t *dst, const uint32_t *src, SceSize len){
 	}
 
 	if(s1 != 0)
-		dst[len >> 3] = __builtin_bswap32(dst[len >> 3]);
+		dst[len >> 3] = __builtin_bswap32(src[len >> 3]);
 
 	return 0;
 }

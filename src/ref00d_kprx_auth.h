@@ -6,7 +6,7 @@
 #ifndef _REF00D_KPRX_AUTH_H_
 #define _REF00D_KPRX_AUTH_H_
 
-#include <psp2/types.h>
+#include <psp2kern/types.h>
 #include "self.h"
 
 typedef struct SceKprxAuthKey { // size is 0x180

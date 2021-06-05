@@ -28,6 +28,7 @@
 #include "elf.h"
 #include "ref00d_types.h"
 #include "ref00d_kprx_auth.h"
+#include "ref00d_rsa_engine.h"
 
 #define HookExport(module_name, library_nid, func_nid, func_name) taiHookFunctionExportForKernel(0x10005, &func_name ## _ref, module_name, library_nid, func_nid, func_name ## _patched)
 #define HookImport(module_name, library_nid, func_nid, func_name) taiHookFunctionImportForKernel(0x10005, &func_name ## _ref, module_name, library_nid, func_nid, func_name ## _patched)
@@ -94,6 +95,7 @@ static int sceSblAuthMgrOpenForKernel_patched(int *ctx){
 }
 
 static int sceSblAuthMgrCloseForKernel_patched(int ctx){
+
 	int ret;
 
 	ret = TAI_CONTINUE(int, sceSblAuthMgrCloseForKernel_ref, ctx);
@@ -105,21 +107,19 @@ static int sceSblAuthMgrCloseForKernel_patched(int ctx){
 
 static int sceSblAuthMgrAuthHeaderForKernel_patched(int ctx, const void *header, int header_size, SceSblSmCommContext130 *ctx130){
 
-	int ret, state;
-	ENTER_SYSCALL(state);
+	int ret;
 
 	ret = ref00d_auth_header(ctx, header, header_size, ctx130);
 	if(ret < 0){
 		ret = TAI_CONTINUE(int, sceSblAuthMgrAuthHeaderForKernel_ref, ctx, header, header_size, ctx130);
 	}
 
-	EXIT_SYSCALL(state);
 	return ret;
 }
 
 static int sceSblAuthMgrLoadBlockForKernel_patched(int ctx, void *buffer, size_t len){
-	int ret, state;
-	ENTER_SYSCALL(state);
+
+	int ret;
 
 	if(ref00d_kprx_auth_state() < 0){
 		ret = TAI_CONTINUE(int, sceSblAuthMgrLoadBlockForKernel_ref, ctx, buffer, len);
@@ -127,13 +127,12 @@ static int sceSblAuthMgrLoadBlockForKernel_patched(int ctx, void *buffer, size_t
 		ret = ref00d_load_block(ctx, buffer, len);
 	}
 
-	EXIT_SYSCALL(state);
 	return ret;
 }
 
 static int sceSblAuthMgrLoadSegmentForKernel_patched(int ctx, int seg_idx){
-	int ret, state;
-	ENTER_SYSCALL(state);
+
+	int ret;
 
 	if(ref00d_kprx_auth_state() < 0){
 		ret = TAI_CONTINUE(int, sceSblAuthMgrLoadSegmentForKernel_ref, ctx, seg_idx);
@@ -141,14 +140,25 @@ static int sceSblAuthMgrLoadSegmentForKernel_patched(int ctx, int seg_idx){
 		ret = ref00d_setup_segment(ctx, seg_idx);
 	}
 
-	EXIT_SYSCALL(state);
 	return ret;
 }
 
+int ref00dCheckSystemFw(void){
+
+	SceKblParam *pKblParam = ksceKernelSysrootGetKblParam();
+	if(pKblParam == NULL)
+		return -1;
+
+	if(((pKblParam->current_fw_version & ~0xFFF) - 0x3600000) >= 0x140000)
+		return -1;
+
+	return 0;
+}
+
 const SceKernelDebugMessageContext panic_ctx = {
-	.hex_value0_hi = 0xA83C06B,
-	.hex_value0_lo = 0xE15A014,
-	.hex_value1    = 0x1F40730,
+	.hex_value0_hi = 0xA83C06B1,
+	.hex_value0_lo = 0xE15A0142,
+	.hex_value1    = 0x1F407303,
 	.func = NULL,
 	.line = 0,
 	.file = NULL
@@ -158,8 +168,17 @@ void _start() __attribute__ ((weak, alias ("module_start")));
 int module_start(SceSize argc, const void *args){
 
 	const void *lr;
-
 	asm volatile("mov %0, lr\n":"=r"(lr));
+
+	int res;
+
+	res = ref00dCheckSystemFw();
+	if(res < 0)
+		ksceDebugPrintKernelPanic(&panic_ctx, lr);
+
+	res = ref00d_rsa_engine_initialization();
+	if(res < 0)
+		ksceDebugPrintKernelPanic(&panic_ctx, lr);
 
 	semaid = ksceKernelCreateSema("Ref00dSema", 0, 1, 1, NULL);
 	if(semaid < 0)
@@ -179,3 +198,4 @@ int module_start(SceSize argc, const void *args){
 ref00d_failed_end:
 	return SCE_KERNEL_START_FAILED;
 }
+                                           

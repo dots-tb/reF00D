@@ -11,6 +11,7 @@
 #include <psp2kern/kernel/cpu.h>
 #include <psp2kern/kernel/ssmgr.h>
 #include <psp2kern/sblaimgr.h>
+#include <psp2kern/types.h>
 #include "self.h"
 #include "elf.h"
 #include "ref00d_types.h"
@@ -43,136 +44,102 @@ SceSelfAuthSegmentInfo *pSegmentInfo;
 
 void *pKeyBase;
 
+SceKprxAuthKey *pKprxKey;
+
+const SceKprxAuthKey ref00d_kprx_user_rev0 = {
+	.key       = {
+		0x26, 0xFC, 0x30, 0x3E, 0x52, 0x37, 0x07, 0x8E, 0x51, 0x49, 0x36, 0xB3, 0x65, 0xC1, 0x6B, 0xB5,
+		0xD6, 0xEC, 0xBD, 0xF4, 0xBC, 0x19, 0x3C, 0x1F, 0xCC, 0x94, 0x19, 0xE9, 0x8F, 0x9C, 0x58, 0xEC
+	},
+	.iv        = {
+		0x91, 0x1E, 0xB4, 0x1B, 0x7C, 0x05, 0x0D, 0xD5, 0x28, 0xD9, 0xC9, 0x57, 0x04, 0x6A, 0xB7, 0x50
+	},
+	.minver    = 0x00000000000,
+	.maxver    = 0xFFFFFFFFFFF,
+	.rsa_n     = {
+		0x2E7EF51F, 0xA6190227, 0x82F60908, 0xC3DB0726,
+		0x06F19850, 0xE2921C69, 0xBEB02510, 0x1C057F60,
+		0x61865E9E, 0xDC423C5E, 0xD6811C7F, 0x9B45EB03,
+		0x699A6C7F, 0xA42A154F, 0xE2B21D5F, 0x59E04FB5,
+		0xEE8A696C, 0x4456A38E, 0xF2A1C7D3, 0x18CB31AF,
+		0x7674351B, 0x8AD85E3D, 0x768274C9, 0x1B49944B,
+		0x5EAD3E63, 0xE08E4B4C, 0x48ABDD93, 0x9E32E55F,
+		0x8E69C2B6, 0x81FBC483, 0x8F9D8786, 0x19882B18,
+		0x59883A03, 0x0B9CFFD7, 0x7D8B5C7E, 0x4F189304,
+		0x6D6E7316, 0xA134E510, 0xEC55326B, 0xB4056A6A,
+		0x5BAC6E64, 0xE904F313, 0x4EBED786, 0x8AFB8700,
+		0xE6845FCA, 0xEEB08492, 0x516FB745, 0x625BAB36,
+		0xA8D45DFB, 0x1630A238, 0x51EB355B, 0x4C527F5E,
+		0xB1108A1A, 0x59DC4A4D, 0x4FE7AEC0, 0x29D23C3F,
+		0xC1702467, 0xDC2972D9, 0x0B713EFC, 0x9DBDAF92,
+		0x88D1C2F1, 0xF8E03B39, 0xFD671E48, 0xA84D9DF6
+	},
+	.sce_type  = SELF,
+	.key_type  = METADATA,
+	.self_type = REF00D_USER,
+	.key_rev   = 0,
+	.flags     = 0,
+	.dbg_key_name = "FapsReF00DKeyset0User",
+};
+
+const SceKprxAuthKey ref00d_kprx_kernel_rev0 = {
+	.key       = {
+		0xC4, 0x8A, 0x3B, 0x69, 0x85, 0x61, 0x9D, 0xDA, 0xDE, 0x50, 0x4B, 0xD9, 0x00, 0xF9, 0x2A, 0xE5,
+		0x30, 0x5C, 0xAC, 0x79, 0xF7, 0xD1, 0xF9, 0xE3, 0xE8, 0x79, 0xFC, 0x2E, 0x36, 0xBA, 0x16, 0x89
+	},
+	.iv        = {
+		0x8C, 0xC6, 0x82, 0xC9, 0x0B, 0x5A, 0xAA, 0x45, 0x3E, 0xC7, 0x87, 0xAE, 0x9D, 0xA4, 0x7B, 0xDB
+	},
+	.minver    = 0x00000000000,
+	.maxver    = 0xFFFFFFFFFFF,
+	.rsa_n     = {
+		0x6BE59F31, 0x0A8BEBC9, 0x0CAF5F0F, 0x359A603B,
+		0xD1DDF9F2, 0xDE76BF52, 0x8E6B4F33, 0x06537D12,
+		0x63BE26C2, 0xBE22B6D7, 0x897877B7, 0x60E33A28,
+		0xC62A23C1, 0x63F5F262, 0x7140FBD9, 0xF81A6DAA,
+		0xC482434E, 0x09BD9CDF, 0x17CAEF58, 0x2B6145C8,
+		0x7F217474, 0xB86F8408, 0x296882E0, 0xD72A24AB,
+		0x23068050, 0x0A328A66, 0x89173F18, 0xF9B05072,
+		0xC37CD87C, 0x1668B9BB, 0xDBD0583E, 0x43D49A60,
+		0x1FB3831A, 0xB44D9180, 0xFFD820B7, 0xFFF48D5B,
+		0x17BDC29A, 0x4FB02D8E, 0x2BA106FB, 0x8D0E51D9,
+		0xBEF576DB, 0x034C98EC, 0xBE92B829, 0x501519A8,
+		0xD0BA0DD0, 0x50E407E7, 0x3E6DA717, 0x48759C58,
+		0x5DB63A8D, 0x98DA85B7, 0x5B4EFC89, 0x99A83C17,
+		0x01ECACA3, 0x454624BE, 0xCEAE36EB, 0x72505A1D,
+		0xF122CF04, 0x8F61A350, 0x4D1234B9, 0x03DE39E3,
+		0x6D11F36A, 0x44C5D95F, 0x3C960FCA, 0xA4EAD3C1
+	},
+	.sce_type  = SELF,
+	.key_type  = METADATA,
+	.self_type = REF00D_KERNEL,
+	.key_rev   = 0,
+	.flags     = 0,
+	.dbg_key_name = "FapsReF00DKeyset0Kernel",
+};
+
 /* ================================ data section ================================ */
 
-extern const SceKprxAuthKey kprx_auth_key_list[];
+int ref00d_kprx_add_key(const SceKprxAuthKey *key){
 
-void ref00d_aes_cbc_decrypt(SceAesContext *ctx, const void *src, void *dst, int length, void *iv);
+	SceKprxAuthKey *loc_key;
 
-int ref00dAesCbcDecrypt(const void *src, void *dst, int length, const void *key, SceSize keysize, void *iv){
-
-	SceAesContext ctx;
-	memset(&ctx, 0, sizeof(ctx));
-
-	if((length & 0xF) != 0)
+	loc_key = ksceKernelAllocHeapMemory(0x1000B, sizeof(*loc_key));
+	if(loc_key == NULL)
 		return -1;
 
-	ksceAesInit1(&ctx, 128, keysize, key);
-	ref00d_aes_cbc_decrypt(&ctx, src, dst, length, iv);
+	memcpy(loc_key, key, sizeof(*loc_key));
+
+	loc_key->next = pKprxKey;
+	pKprxKey = loc_key;
 
 	return 0;
 }
-
-int ref00dAes128Ctr(void *dst, const void *src, SceSize length, void *iv){
-
-	char iv_enc[0x10];
-
-	int n = (length & ~(0x10 - 1)) >> 4;
-	int x = length & (0x10 - 1);
-
-	for(int i=0;i<n;i++){
-		ksceAesEncrypt1(&ref00d_kprx_aes_ctx, iv, iv_enc);
-		for(int p=0;p<0x10;p++){
-			((char *)dst)[p] = ((char *)src)[p] ^ iv_enc[p];
-		}
-
-		dst += 0x10; src += 0x10;
-
-		int c = 1;
-		for(int p=0;p<0x10;p++){
-			((char *)iv)[0xF - p] += c; c = (((char *)iv)[0xF - p] - c) == -1;
-		}
-	}
-
-	if(x != 0){
-		ksceAesEncrypt1(&ref00d_kprx_aes_ctx, iv, iv_enc);
-		for(int p=0;p<x;p++){
-			((char *)dst)[p] = ((char *)src)[p] ^ iv_enc[p];
-		}
-	}
-
-	return 0;
-}
-
-int kprxAuthDecryptKey(SceKprxAuthKey *entry, const void *key, void *iv){
-
-	int res;
-	SceKprxAuthKey tmp;
-	memcpy(&tmp, entry, sizeof(tmp));
-
-	res = ref00dAesCbcDecrypt(&tmp, &tmp, sizeof(SceKprxAuthKey), key, 128, iv);
-	if(res < 0){
-		printf("%s:ref00dAesCbcDecrypt failed 0x%X\n", __FUNCTION__, res);
-		return res;
-	}
-
-	if(tmp.magic != 0x0D0F33B9){
-		printf("%s:Magic not match. magic:0x%08X\n", __FUNCTION__, tmp.magic);
-		return -1;
-	}
-
-	uint32_t sha256_res[8];
-
-	res = ksceSha256Digest(&tmp, sizeof(SceKprxAuthKey) - sizeof(uint32_t), sha256_res);
-	if(res < 0){
-		printf("%s:sceSha256Digest failed 0x%X\n", __FUNCTION__, res);
-		return res;
-	}
-
-	if(tmp.hash != (((sha256_res[0] ^ sha256_res[1]) & ~sha256_res[2]) ^ sha256_res[3])){
-		printf("%s:Hash not match. hash:0x%08X\n", __FUNCTION__, tmp.hash);
-		return -1;
-	}
-
-	tmp.hash = 0;
-
-	ksceKernelCpuUnrestrictedMemcpy(entry, &tmp, sizeof(SceKprxAuthKey));
-
-	return 0;
-}
-
-const ScePortabilityData enc_key_blob = {
-	.msg_size = 0x20,
-	.msg = {
-		0x92, 0xd0, 0xc1, 0xe9, 0x40, 0xfd, 0x80, 0x12, 0x4b, 0x1f, 0x52, 0x56, 0x99, 0x22, 0x59, 0x3f,
-		0x19, 0x1e, 0xba, 0x4b, 0x66, 0xd6, 0x53, 0xda, 0x1b, 0x54, 0xe8, 0xbf, 0x06, 0xfc, 0xe6, 0x99
-	}
-};
 
 int kprxAuthKeysSetup(void){
 
-	int res;
-	char iv[0x10];
-	ScePortabilityData dst;
-
-	memset(&dst, 0, sizeof(dst));
-	memset(iv, 0, sizeof(iv));
-
-	dst.msg_size = 0x20;
-
-	res = ksceSblSsDecryptWithPortability(0xC, iv, &enc_key_blob, &dst);
-	if(res < 0){
-		printf("%s:sceSblSsDecryptWithPortability failed 0x%X\n", __FUNCTION__, res);
-		return res;
-	}
-
-	int check_failed = 0;
-
-	for(int i=0;i<0x10;i++){
-		check_failed |= (dst.msg[i] != 0);
-	}
-
-	if(check_failed != 0){
-		printf("%s:kek decryption failed.\n", __FUNCTION__);
-		return res;
-	}
-
-	for(int i=0;i<REF00D_KPRX_AUTH_KEY_NUMBER;i++){
-		memset(iv, 0, sizeof(iv));
-		res = kprxAuthDecryptKey((SceKprxAuthKey *)&kprx_auth_key_list[i], &dst.msg[0x10], iv);
-		if(res < 0)
-			return res;
-	}
+	ref00d_kprx_add_key(&ref00d_kprx_user_rev0);
+	ref00d_kprx_add_key(&ref00d_kprx_kernel_rev0);
 
 	return 0;
 }
@@ -180,6 +147,8 @@ int kprxAuthKeysSetup(void){
 int ref00d_kprx_auth_initialization(void){
 
 	int res;
+
+	pKprxKey = NULL;
 
 	res = kprxAuthKeysSetup();
 	if(res < 0){
@@ -198,18 +167,24 @@ int ref00d_kprx_auth_initialization(void){
 	return 0;
 }
 
-static int get_key(int key_type, uint16_t sce_type, uint64_t sys_ver, int key_rev, int selftype, int flags){
-	for(int i = 0; i < REF00D_KPRX_AUTH_KEY_NUMBER; i++){
+static const SceKprxAuthKey *ref00d_kprx_auth_get_key(int key_type, int sce_type, uint64_t sys_ver, int key_rev, int selftype, int flags){
+
+	SceKprxAuthKey *kprx_key = pKprxKey;
+
+	while(kprx_key != NULL){
 		if(
-			(kprx_auth_key_list[i].flags     == flags) &&
-			(kprx_auth_key_list[i].self_type == selftype) && (kprx_auth_key_list[i].key_rev  == key_rev) &&
-			(kprx_auth_key_list[i].key_type  == key_type) && (kprx_auth_key_list[i].sce_type == sce_type) &&
-			(sys_ver >= kprx_auth_key_list[i].minver) && (sys_ver <= kprx_auth_key_list[i].maxver)
+			(kprx_key->flags     == flags) &&
+			(kprx_key->self_type == selftype) && (kprx_key->key_rev  == key_rev) &&
+			(kprx_key->key_type  == key_type) && (kprx_key->sce_type == sce_type) &&
+			(sys_ver >= kprx_key->minver) && (sys_ver <= kprx_key->maxver)
 		){
-			return i;
+			printf("Key: %s\n", kprx_key->dbg_key_name);
+			return kprx_key;
 		}
+		kprx_key = kprx_key->next;
 	}
-	return -1;
+
+	return NULL;
 }
 
 int remove_npdrm_personalize(cf_header *cf_hdr, const void *key, const void *klicensee){
@@ -226,6 +201,16 @@ int remove_npdrm_personalize(cf_header *cf_hdr, const void *key, const void *kli
 
 	// decrypt metadata
 	ref00dAesCbcDecrypt(decrypt_point, decrypt_point, sizeof(SceSelfAuthHeaderKey), klicensee_dec, 0x80, &iv[0x10]);
+
+	return 0;
+}
+
+int setup_ac(const void *data, int bit){
+
+	if(bit > 0xFF)
+		return -1;
+
+	((char *)data)[(bit & ~7) >> 3] |= (1 << (~bit & 7));
 
 	return 0;
 }
@@ -265,46 +250,43 @@ int decrypt_certified_personalize(const SceKprxAuthKey *key_info){
 	 * Does PS Vita only support RSA2048(type5)
 	 */
 	if(pHeaderInfo->sig_type != 5){
-		ksceDebugPrintf("unknown sig type : 0x%X\n", pHeaderInfo->sig_type);
+		printf("unknown sig type : 0x%X\n", pHeaderInfo->sig_type);
 		return 0x800F0625;
 	}
 
-	if(key_info->rsa_n[0] != 0){
+	SceSize header_size = ((cf_header *)ref00d_private_header)->m_header_length;
 
-		SceSize header_size = ((cf_header *)ref00d_private_header)->m_header_length;
+	if(REF00D_HEADER_RANGE_CHECK(pHeaderInfo->offset_sig, 0x100))
+		return 0x800F0624;
 
-		if(REF00D_HEADER_RANGE_CHECK(pHeaderInfo->offset_sig, 0x100))
-			return 0x800F0624;
+	void *pSelfRsaSig = (void *)(ref00d_private_header + pHeaderInfo->offset_sig);
 
-		void *pSelfRsaSig = (void *)(ref00d_private_header + pHeaderInfo->offset_sig);
+	__swap_data(pSelfRsaSig, pSelfRsaSig, 0x100); // Big endian to little endian
 
-		__swap_data(pSelfRsaSig, pSelfRsaSig, 0x100); // Big endian to little endian
+	uint32_t kprx_auth_rsa_buffer_e[0x40];
+	memset(kprx_auth_rsa_buffer_e, 0, sizeof(kprx_auth_rsa_buffer_e));
+	kprx_auth_rsa_buffer_e[0] = 0x10001;
 
-		uint32_t kprx_auth_rsa_buffer_e[0x40];
-		memset(kprx_auth_rsa_buffer_e, 0, sizeof(kprx_auth_rsa_buffer_e));
-		kprx_auth_rsa_buffer_e[0] = 0x10001;
+	int res;
 
-		int res;
+	ref00dRsaEngineRequest(pSelfRsaSig, pSelfRsaSig, kprx_auth_rsa_buffer_e, key_info->rsa_n);
 
-		ref00dRsaEngineRequest(pSelfRsaSig, pSelfRsaSig, kprx_auth_rsa_buffer_e, key_info->rsa_n);
+	char header_hash[0x20];
+	memset(header_hash, 0, sizeof(header_hash));
 
-		char header_hash[0x20];
-		memset(header_hash, 0, sizeof(header_hash));
+	ksceSha256Digest(ref00d_private_header, (SceSize)pHeaderInfo->offset_sig, header_hash);
 
-		ksceSha256Digest(ref00d_private_header, (SceSize)pHeaderInfo->offset_sig, header_hash);
+	res = ref00dRsaEngineWaitWork();
+	if(res < 0){
+		printf("sceNpDrmRsaModPower failed\n");
+		return 0x800F0516;
+	}
 
-		res = ref00dRsaEngineWaitWork();
-		if(res < 0){
-			printf("sceNpDrmRsaModPower failed\n");
-			return 0x800F0516;
-		}
+	__swap_data(pSelfRsaSig, pSelfRsaSig, 0x20);
 
-		__swap_data(pSelfRsaSig, pSelfRsaSig, 0x20);
-
-		if(memcmp(header_hash, pSelfRsaSig, 0x20) != 0){
-			printf("Header hash not match on RSA sig and raw header\n");
-			return 0x800F0516;
-		}
+	if(memcmp(header_hash, pSelfRsaSig, 0x20) != 0){
+		printf("Header hash not match on RSA sig and raw header\n");
+		return 0x800F0516;
 	}
 
 	pSegmentInfo = decrypt_point;
@@ -317,7 +299,8 @@ int decrypt_certified_personalize(const SceKprxAuthKey *key_info){
 
 int decrypt_module(const void *header, SceSize header_size, SceSblSmCommContext130 *ctx130){
 
-	int res, key_index;
+	int res;
+	const SceKprxAuthKey *curr_key;
 	uint64_t sysver = 0LL;
 	SceSelfAuthInfo self_auth_info;
 	cf_header *cf_hdr;
@@ -361,7 +344,7 @@ int decrypt_module(const void *header, SceSize header_size, SceSblSmCommContext1
 			sysver = control_info->PSVita_elf_digest_info.min_required_fw;
 			break;
 		case 7:
-			memcpy(&self_auth_info.padding2, control_info->PSVita_shared_secret_info.shared_secret_0, 0x10);
+			memcpy(&self_auth_info.secret.shared_secret_0, control_info->PSVita_shared_secret_info.shared_secret_0, 0x10);
 			break;
 		}
 
@@ -377,22 +360,19 @@ int decrypt_module(const void *header, SceSize header_size, SceSblSmCommContext1
 		sysver = appinfo->version;
 
 	if(appinfo->self_type == APP){
-		key_index = get_key(NPDRM, cf_hdr->m_category, sysver, (cf_hdr->attributes.m_sdk_type >= 2) ? 1 : 0, appinfo->self_type, 0);
-		if(key_index < 0)
+		curr_key = ref00d_kprx_auth_get_key(NPDRM, cf_hdr->m_category, sysver, (cf_hdr->attributes.m_sdk_type >= 2) ? 1 : 0, appinfo->self_type, 0);
+		if(curr_key == NULL)
 			return -1;
 
-		res = remove_npdrm_personalize(cf_hdr, kprx_auth_key_list[key_index].key, &self_auth_info.klicensee);
+		res = remove_npdrm_personalize(cf_hdr, curr_key->key, &self_auth_info.secret.klicensee);
 		if(res < 0)
 			return res;
 	}
 
-	key_index = get_key(METADATA, cf_hdr->m_category, sysver, cf_hdr->attributes.m_sdk_type, appinfo->self_type, 0);
-	if(key_index < 0)
-		key_index = get_key(METADATA, cf_hdr->m_category, sysver, cf_hdr->attributes.m_sdk_type, appinfo->self_type, REF00D_KEY_FLAG_HAS_PROTOTYPE);
-
-	if(key_index < 0){
-		ksceDebugPrintf(
-			"key not found. category:%08X sysver:%llX sdk_type:%X self_type:%X\n",
+	curr_key = ref00d_kprx_auth_get_key(METADATA, cf_hdr->m_category, sysver, cf_hdr->attributes.m_sdk_type, appinfo->self_type, 0);
+	if(curr_key == NULL){
+		printf(
+			"Not found to key. category:0x%08X sysver:0x%llX sdk_type:0x%X self_type:0x%X\n",
 			cf_hdr->m_category, sysver, cf_hdr->attributes.m_sdk_type, appinfo->self_type
 		);
 		return -1;
@@ -401,9 +381,9 @@ int decrypt_module(const void *header, SceSize header_size, SceSblSmCommContext1
 	/*
 	 * decrypt and get section
 	 */
-	res = decrypt_certified_personalize(&kprx_auth_key_list[key_index]);
+	res = decrypt_certified_personalize(curr_key);
 	if(res < 0){
-		ksceDebugPrintf("decrypt_certified_personalize failed.\n");
+		printf("decrypt_certified_personalize failed.\n");
 		return res;
 	}
 
@@ -418,7 +398,7 @@ int decrypt_module(const void *header, SceSize header_size, SceSblSmCommContext1
 			memcpy(&self_auth_info.capability, &pMetaInfo->PSVITA_caps_info.capability, sizeof(self_auth_info.capability));
 			break;
 		case 3:
-			memcpy(&self_auth_info.attributes, &pMetaInfo->PSVITA_attr_info.attributes, sizeof(self_auth_info.attributes));
+			memcpy(&self_auth_info.attribute, &pMetaInfo->PSVITA_attr_info.attributes, sizeof(self_auth_info.attribute));
 			break;
 		}
 
@@ -432,14 +412,14 @@ int decrypt_module(const void *header, SceSize header_size, SceSblSmCommContext1
 
 	if(appinfo->self_type >= 0x10000){
 
-		int ac_val = check_ac(&self_auth_info.attributes, 29);
+		int ac_val = check_ac(&self_auth_info.attribute, 29);
 
 		if(ksceSblAimgrIsDEX() != 0 && ac_val == 0){
 			printf("[%-15s] %s : %s = %d\n", "Error", "System product", "DEX", ksceSblAimgrIsDEX());
 			return 0x800F0516;
 		}
 
-		ac_val = check_ac(&self_auth_info.attributes, 30);
+		ac_val = check_ac(&self_auth_info.attribute, 30);
 
 		if(ksceSblAimgrIsTest() != 0 && ac_val == 0){
 			printf("[%-15s] %s : %s = %d\n", "Error", "System product", "Test", ksceSblAimgrIsTest());
@@ -451,7 +431,7 @@ int decrypt_module(const void *header, SceSize header_size, SceSblSmCommContext1
 			return 0x800F0516;
 		}
 
-		ac_val = check_ac(&self_auth_info.attributes, 31);
+		ac_val = check_ac(&self_auth_info.attribute, 31);
 
 		if(ksceSblAimgrIsCEX() != 0 && ac_val == 0){
 			printf("[%-15s] %s : %s = %d\n", "Error", "System product", "CEX", ksceSblAimgrIsCEX());
@@ -462,13 +442,13 @@ int decrypt_module(const void *header, SceSize header_size, SceSblSmCommContext1
 
 		kscePmMgrGetProductMode(&is_production_mode);
 
-		ac_val = check_ac(&self_auth_info.attributes, 32); // Requires production mode
+		ac_val = check_ac(&self_auth_info.attribute, 32); // Requires production mode
 		if(ac_val != 0 && is_production_mode == 0){
 			printf("[%-15s] %s : %s = %d\n", "Error", "Manufacturing mode", "Required", 1);
 			return 0x800F0516;
 		}
 
-		ac_val = check_ac(&self_auth_info.attributes, 33); // Prohibit production mode
+		ac_val = check_ac(&self_auth_info.attribute, 33); // Prohibit production mode
 		if(ac_val != 0 && is_production_mode != 0){
 			printf("[%-15s] %s : %s = %d\n", "Error", "Manufacturing mode", "Required", 0);
 			return 0x800F0516;
@@ -550,7 +530,7 @@ int ref00d_auth_header(int ctx, const void *header, SceSize header_size, SceSblS
 
 #if defined(REF00D_DEBUG) && (REF00D_DEBUG == 1)
 	time_e = ksceKernelGetSystemTimeWide();
-	printf("decrypt_module : 0x%X, is_auth_success %X, time:%6lld usec\n", res, is_auth_success, time_e - time_s);
+	printf("\tdecrypt_module : 0x%X, is_auth_success %X, time:%6lld usec\n", res, is_auth_success, time_e - time_s);
 #endif
 
 	return res;
@@ -573,7 +553,7 @@ int ref00d_load_block(int ctx, void *buffer, SceSize len){
 
 		if(len < 0x300){ // Some initialization of DMAC5 takes 80 usec, so it is faster to run normal AES.
 			__swap_data(ref00d_private_iv, ref00d_private_iv, 0x10);
-			ref00dAes128Ctr(buffer, buffer, len, ref00d_private_iv);
+			ref00dAes128Ctr(&ref00d_kprx_aes_ctx, buffer, buffer, len, ref00d_private_iv);
 			__swap_data(ref00d_private_iv, ref00d_private_iv, 0x10);
 		}else{
 			ksceSblDmac5AesCtrDec(buffer, buffer, len, key, 0x80, ref00d_private_iv, 1);
@@ -600,7 +580,7 @@ int ref00d_setup_segment(int ctx, int seg_idx){
 	for(int i=0;i<pHeaderInfo->section_num;i++){
 		if(pSegmentInfo[i].section_idx == seg_idx){
 
-			printf("ref00d_setup_segment : found key idx : 0x%X\n", i);
+			printf("\tref00d_setup_segment : found key idx : 0x%X\n", i);
 
 			currentKey = i;
 

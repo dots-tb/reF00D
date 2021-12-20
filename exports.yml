@@ -22,3 +22,8 @@ reF00D:
         - ref00d_get_internal_header
         - ref00d_segment_num
         - ref00d_segment_info
+    ReAuthMgrForKernel:
+      version: 1
+      syscall: false
+      functions:
+        - ref00d_kprx_add_key

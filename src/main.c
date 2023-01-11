@@ -149,7 +149,7 @@ int ref00dCheckSystemFw(void){
 	if(pKblParam == NULL)
 		return -1;
 
-	if(((pKblParam->current_fw_version & ~0xFFF) - 0x3600000) >= 0x140000)
+	if(((pKblParam->current_fw_version & ~0xFFF) - 0x3500000) >= 0x240000)
 		return -1;
 
 	return 0;

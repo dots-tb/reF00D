@@ -5,7 +5,7 @@ reF00D:
     minor: 1
   main:
     start: module_start
-  modules:
+  libraries:
     ReAuthMgr:
       version: 1
       syscall: false

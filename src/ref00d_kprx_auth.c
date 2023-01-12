@@ -500,7 +500,7 @@ int ref00d_auth_close(int ctx){
 
 	if(ctx != 1){
 		printf("ref00d_auth_close ctx != 1\n");
-		return -1;
+		return 0x800F0509;
 	}
 
 	res = ksceKernelSignalSema(semaid, 1);

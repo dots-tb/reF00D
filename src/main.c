@@ -101,6 +101,7 @@ static int sceSblAuthMgrCloseForKernel_patched(int ctx){
 	ret = TAI_CONTINUE(int, sceSblAuthMgrCloseForKernel_ref, ctx);
 
 	ref00d_auth_close(ref00d_ctx);
+	ref00d_ctx = 0;
 
 	return ret;
 }

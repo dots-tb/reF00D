@@ -6,7 +6,7 @@
 #ifndef _REF00D_RSA_ENGINE_H_
 #define _REF00D_RSA_ENGINE_H_
 
-int ref00dRsaEngineRequest(void *dst, const void *src, const void *k, const void *n);
+int ref00dRsaEngineRequest(void *src, void *k, void *n, void *hash);
 
 int ref00dRsaEngineWaitWork(void);
 

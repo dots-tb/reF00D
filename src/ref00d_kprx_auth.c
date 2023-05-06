@@ -152,13 +152,13 @@ int ref00d_kprx_auth_initialization(void){
 
 	res = kprxAuthKeysSetup();
 	if(res < 0){
-		printf("%s:kprxAuthKeysSetup failed 0x%X\n", __FUNCTION__, res);
+		SCE_KERNEL_PRINTF_LEVEL(1, "kprxAuthKeysSetup 0x%X\n", res);
 		return res;
 	}
 
 	void *memptr = ksceKernelAllocHeapMemory(0x1000B, 0x103F);
 	if(memptr == NULL){
-		printf("%s:sceKernelAllocHeapMemory failed\n", __FUNCTION__);
+		SCE_KERNEL_PRINTF_LEVEL(1, "sceKernelAllocHeapMemory failed\n");
 		return -1;
 	}
 
@@ -167,7 +167,7 @@ int ref00d_kprx_auth_initialization(void){
 	return 0;
 }
 
-static const SceKprxAuthKey *ref00d_kprx_auth_get_key(int key_type, int sce_type, uint64_t sys_ver, int key_rev, int selftype, int flags){
+static SceKprxAuthKey *ref00d_kprx_auth_get_key(int key_type, int sce_type, uint64_t sys_ver, int key_rev, int selftype, int flags){
 
 	SceKprxAuthKey *kprx_key = pKprxKey;
 
@@ -219,7 +219,7 @@ int check_ac(const void *data, int bit){
 	return ((((char *)data)[(bit & ~7) >> 3] & (1 << (~bit & 7))) != 0) ? 1 : 0;
 }
 
-int decrypt_certified_personalize(const SceKprxAuthKey *key_info){
+int decrypt_certified_personalize(SceKprxAuthKey *key_info){
 
 	SceSelfAuthHeaderKey *pHeaderKey;
 
@@ -261,31 +261,27 @@ int decrypt_certified_personalize(const SceKprxAuthKey *key_info){
 
 	void *pSelfRsaSig = (void *)(ref00d_private_header + pHeaderInfo->offset_sig);
 
-	__swap_data(pSelfRsaSig, pSelfRsaSig, 0x100); // Big endian to little endian
+	//__swap_data(pSelfRsaSig, pSelfRsaSig, 0x100); // Big endian to little endian
 
 	uint32_t kprx_auth_rsa_buffer_e[0x40];
 	memset(kprx_auth_rsa_buffer_e, 0, sizeof(kprx_auth_rsa_buffer_e));
 	kprx_auth_rsa_buffer_e[0] = 0x10001;
+	// kprx_auth_rsa_buffer_e[0x3F] = __builtin_bswap32(0x10001);
 
 	int res;
-
-	ref00dRsaEngineRequest(pSelfRsaSig, pSelfRsaSig, kprx_auth_rsa_buffer_e, key_info->rsa_n);
-
 	char header_hash[0x20];
-	memset(header_hash, 0, sizeof(header_hash));
 
 	ksceSha256Digest(ref00d_private_header, (SceSize)pHeaderInfo->offset_sig, header_hash);
 
-	res = ref00dRsaEngineWaitWork();
+	res = ref00dRsaEngineRequest(pSelfRsaSig, kprx_auth_rsa_buffer_e, key_info->rsa_n, header_hash);
 	if(res < 0){
-		printf("sceNpDrmRsaModPower failed\n");
+		ksceKernelPrintf("ref00dRsaEngineRequest 0x%X\n", res);
 		return 0x800F0516;
 	}
 
-	__swap_data(pSelfRsaSig, pSelfRsaSig, 0x20);
-
-	if(memcmp(header_hash, pSelfRsaSig, 0x20) != 0){
-		printf("Header hash not match on RSA sig and raw header\n");
+	res = ref00dRsaEngineWaitWork();
+	if(res < 0){
+		ksceKernelPrintf("ref00dRsaEngineWaitWork 0x%X\n", res);
 		return 0x800F0516;
 	}
 
@@ -300,7 +296,7 @@ int decrypt_certified_personalize(const SceKprxAuthKey *key_info){
 int decrypt_module(const void *header, SceSize header_size, SceSblSmCommContext130 *ctx130){
 
 	int res;
-	const SceKprxAuthKey *curr_key;
+	SceKprxAuthKey *curr_key;
 	uint64_t sysver = 0LL;
 	SceSelfAuthInfo self_auth_info;
 	cf_header *cf_hdr;
@@ -457,7 +453,7 @@ int decrypt_module(const void *header, SceSize header_size, SceSblSmCommContext1
 
 	self_auth_info.program_authority_id = appinfo->authid;
 
-	memcpy(&ctx130->self_auth_info, &self_auth_info, sizeof(SceSelfAuthInfo));
+	memcpy(&(ctx130->self_auth_info), &self_auth_info, sizeof(SceSelfAuthInfo));
 
 	return 0;
 }

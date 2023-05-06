@@ -29,6 +29,7 @@ target_link_libraries(reF00D
   SceDebugForDriver_stub
   ScePmMgrForDriver_stub
   SceSblAIMgrForDriver_stub
+  SceSblPostSsMgrForDriver_stub
   SceSblSsMgrForDriver_stub
   SceSysclibForDriver_stub
   SceSysmemForDriver_stub
@@ -42,7 +43,7 @@ target_link_libraries(reF00D
 
 set_target_properties(reF00D
   PROPERTIES LINK_FLAGS "-nostdlib"
-  COMPILE_FLAGS "-D__PSP2_KERNEL__"
+  COMPILE_FLAGS "-D__PSP2_KERNEL__ -D__PSP2FILE__='\"$(subst ${CMAKE_SOURCE_DIR}/src/,,$(abspath $<))\"' -D__PSP2FILEHASH__='0x$(shell echo -n \"$(subst ${CMAKE_SOURCE_DIR}/src/,,$(abspath $<))\" | shasum -a 1 | cut -c 1-8)'"
 )
 
 vita_create_self(reF00D.skprx reF00D

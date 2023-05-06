@@ -144,49 +144,24 @@ static int sceSblAuthMgrLoadSegmentForKernel_patched(int ctx, int seg_idx){
 	return ret;
 }
 
-int ref00dCheckSystemFw(void){
-
-	SceKblParam *pKblParam = ksceKernelSysrootGetKblParam();
-	if(pKblParam == NULL)
-		return -1;
-
-	if(((pKblParam->current_fw_version & ~0xFFF) - 0x3500000) >= 0x240000)
-		return -1;
-
-	return 0;
-}
-
-const SceKernelDebugMessageContext panic_ctx = {
-	.hex_value0_hi = 0xA83C06B1,
-	.hex_value0_lo = 0xE15A0142,
-	.hex_value1    = 0x1F407303,
-	.func = NULL,
-	.line = 0,
-	.file = NULL
-};
-
 void _start() __attribute__ ((weak, alias ("module_start")));
 int module_start(SceSize argc, const void *args){
 
-	const void *lr;
-	asm volatile("mov %0, lr\n":"=r"(lr));
-
 	int res;
 
-	res = ref00dCheckSystemFw();
-	if(res < 0)
-		ksceDebugPrintKernelPanic(&panic_ctx, lr);
-
 	res = ref00d_rsa_engine_initialization();
-	if(res < 0)
-		ksceDebugPrintKernelPanic(&panic_ctx, lr);
+	if(res < 0){
+		SCE_KERNEL_PANIC();
+	}
 
 	semaid = ksceKernelCreateSema("Ref00dSema", 0, 1, 1, NULL);
-	if(semaid < 0)
-		goto ref00d_failed_end;
+	if(semaid < 0){
+		SCE_KERNEL_PANIC();
+	}
 
-	if(ref00d_kprx_auth_initialization() < 0)
-		ksceDebugPrintKernelPanic(&panic_ctx, lr);
+	if(ref00d_kprx_auth_initialization() < 0){
+		SCE_KERNEL_PANIC();
+	}
 
 	HookImport("SceKernelModulemgr", 0x7ABF5135, 0xA9CD2A09, sceSblAuthMgrOpenForKernel);
 	HookImport("SceKernelModulemgr", 0x7ABF5135, 0x026ACBAD, sceSblAuthMgrCloseForKernel);
@@ -195,8 +170,5 @@ int module_start(SceSize argc, const void *args){
 	HookImport("SceKernelModulemgr", 0x7ABF5135, 0x89CCDA2C, sceSblAuthMgrLoadSegmentForKernel);
 
 	return SCE_KERNEL_START_SUCCESS;
-
-ref00d_failed_end:
-	return SCE_KERNEL_START_FAILED;
 }
                                            

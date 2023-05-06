@@ -6,28 +6,24 @@
 #include <psp2kern/kernel/threadmgr.h>
 #include <psp2kern/kernel/modulemgr.h>
 #include <psp2kern/kernel/debug.h>
+#include <psp2kern/post_ss_mgr.h>
 #include "ref00d_types.h"
 #include "ref00d_rsa_engine.h"
 
-int module_get_offset(SceUID pid, SceUID modid, int segidx, uint32_t offset, uintptr_t *dst);
-
-typedef struct SceNpDrmRsaKey {
-	const void *n;
-	const void *k; // e/d
-} SceNpDrmRsaKey;
 
 /* ================================ data section ================================ */
 
 SceUID ref00d_rsa_thid, ref00d_rsa_comm_evfid, ref00d_rsa_mtxid, ref00d_rsa_semaid;
-void *rsa_dst;
-const void *rsa_m;
-const void *rsa_k;
-const void *rsa_n;
+void *rsa_m;
+void *rsa_k;
+void *rsa_n;
+void *rsa_hash;
 int rsa_res;
 
-int (* sceNpDrmRsaModPower)(void *dst, const void *src, SceNpDrmRsaKey *pParam, int size);
-
 /* ================================ data section ================================ */
+
+
+
 
 #define REF00D_RSA_ENGINE_COMM_REQ      (1 << 0)
 #define REF00D_RSA_ENGINE_COMM_REQ_DONE (1 << 1)
@@ -43,9 +39,18 @@ int ref00dRsaEngine(SceSize args, void *argp){
 			continue;
 		}
 
-		SceNpDrmRsaKey rsa_keys = {.n = rsa_n, .k = rsa_k};
+		res = ksceSblRSA2048VerifySignature(
+			(SceSblRsaDataParam[]){{.data = rsa_m, .size = 0x100}},
+			(SceSblRsaDataParam[]){{.data = rsa_hash, .size = 0x20}},
+			(SceSblRsaPublicKeyParam[]){{.n = rsa_n, .k = rsa_k}},
+			0xB
+		);
 
-		rsa_res = sceNpDrmRsaModPower(rsa_dst, rsa_m, &rsa_keys, 0x40);
+		rsa_res = res;
+
+		if(res != SCE_OK){
+			rsa_res = 0x800F0024;
+		}
 
 		ksceKernelSetEventFlag(ref00d_rsa_comm_evfid, REF00D_RSA_ENGINE_COMM_REQ_DONE);
 	}
@@ -53,7 +58,7 @@ int ref00dRsaEngine(SceSize args, void *argp){
 	return 0;
 }
 
-int ref00dRsaEngineRequest(void *dst, const void *src, const void *k, const void *n){
+int ref00dRsaEngineRequest(void *src, void *k, void *n, void *hash){
 
 	int res, res_mtx;
 
@@ -63,10 +68,10 @@ int ref00dRsaEngineRequest(void *dst, const void *src, const void *k, const void
 
 	res = ksceKernelWaitSema(ref00d_rsa_semaid, 1, NULL);
 	if(res >= 0){
-		rsa_dst = dst;
 		rsa_m   = src;
 		rsa_k   = k;
 		rsa_n   = n;
+		rsa_hash = hash;
 
 		res = ksceKernelSetEventFlag(ref00d_rsa_comm_evfid, REF00D_RSA_ENGINE_COMM_REQ);
 	}
@@ -105,16 +110,6 @@ int ref00dRsaEngineWaitWork(void){
 int ref00d_rsa_engine_initialization(void){
 
 	int res;
-
-	SceUID SceNpDrm_moduleid = ksceKernelSearchModuleByName("SceNpDrm");
-	if(SceNpDrm_moduleid < 0){
-		printf("%s:SceNpDrm not found.\n", __FUNCTION__);
-		return SceNpDrm_moduleid;
-	}
-
-	res = module_get_offset(0x10005, SceNpDrm_moduleid, 0, 0xEDD4 | 1, (uintptr_t *)&sceNpDrmRsaModPower);
-	if(res < 0)
-		return res;
 
 	res = ksceKernelCreateMutex("Ref00dRsaMutex", 0, 0, NULL);
 	if(res < 0)
